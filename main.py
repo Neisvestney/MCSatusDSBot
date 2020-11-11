@@ -53,7 +53,7 @@ async def update_message(server, status=None):
 
         embed.add_field(name="Последнее обновление", value=datetime.now().strftime('%H:%M'), inline=False)
         await server['message'].edit(embed=embed, content='')
-    except (gaierror, ConnectionRefusedError, timeout, OSError):
+    except (gaierror, ConnectionRefusedError, timeout, OSError, AttributeError):
         await update_servers()
         await update_status()
 
