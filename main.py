@@ -2,6 +2,7 @@ import asyncio
 import threading
 import time
 import os
+from datetime import datetime
 from socket import gaierror, timeout
 
 from discord import Message, NotFound, CategoryChannel, Colour
@@ -38,18 +39,23 @@ async def get_message(mid):
 
 
 async def update_message(server, status=None):
-    if server['online']:
-        embed = discord.Embed(title=f"Стутус сервера {server['obj'].host}:{server['obj'].port}",
-                              description=f"{status.description['text']} ({status.version.name})",
-                              color=Colour(int('0c8043', 16)))
-        embed.add_field(name="Онлайн", value=status.players.online)
-        embed.add_field(name="Игроки", value=x if (x := ', '.join([status.players.sample[i].name for i in range(status.players.online)])) else 'Нет игроков')
-    else:
-        embed = discord.Embed(title=f"Стутус сервера {server['obj'].host}:{server['obj'].port}",
-                              description='Сервер выключен', color=Colour(int('d50001', 16)))
-        embed.add_field(name="Онлайн", value="0")
+    try:
+        if server['online']:
+            embed = discord.Embed(title=f"Стутус сервера {server['obj'].host}:{server['obj'].port}",
+                                  description=f"{status.description['text']} ({status.version.name})",
+                                  color=Colour(int('0c8043', 16)))
+            embed.add_field(name="Онлайн", value=status.players.online)
+            embed.add_field(name="Игроки", value=x if (x := ', '.join([status.players.sample[i].name for i in range(status.players.online)])) else 'Нет игроков')
+        else:
+            embed = discord.Embed(title=f"Стутус сервера {server['obj'].host}:{server['obj'].port}",
+                                  description='Сервер выключен', color=Colour(int('d50001', 16)))
+            embed.add_field(name="Онлайн", value="0")
 
-    await server['message'].edit(embed=embed, content='')
+        embed.add_field(name="Последнее обновление", value=datetime.now().strftime('%H:%M'), inline=False)
+        await server['message'].edit(embed=embed, content='')
+    except (gaierror, ConnectionRefusedError, timeout, OSError):
+        await update_servers()
+        await update_status()
 
 
 async def update_status():
@@ -91,6 +97,7 @@ print("Starting bot...")
 @client.event
 async def on_ready():
     print(f'Logged in as {client.user}')
+    await client.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="a minecraft servers | /mcstatus start"))
     await update_servers()
     asyncio.create_task(update_status())
 
